@@ -1,0 +1,11 @@
+services:
+  mysql:
+    container_name: rinha_backend
+    image: mysql
+    restart: always
+
+    env_file:
+      - backend/.env
+
+    ports:
+      - '3306:3306'
