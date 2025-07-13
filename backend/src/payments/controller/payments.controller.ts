@@ -1,16 +1,22 @@
-import { Body, Controller, Post, Get, HttpCode } from '@nestjs/common';
+import { Body, Controller, Post, Get, HttpCode, Inject } from '@nestjs/common';
 import { PaymentsService } from '../service/payments.service';
 import { PaymentDto, SummaryParams } from '../dto/payments.dto';
+import { InjectQueue } from '@nestjs/bull';
+import { Queue } from 'bull';
 
 @Controller('api')
 export class PaymentsController {
-  constructor(private readonly paymentsService: PaymentsService) {}
+  constructor(
+    @InjectQueue('payments-queue') private readonly paymentsQueue: Queue,
+    private readonly paymentsService: PaymentsService,
+  ) {}
 
   // Retorna 201 por padrão no NestJS
   @Post('/payments')
-  @HttpCode(201) // Especificado somente para termos certeza do retorno.
+  @HttpCode(202) // Especificado somente para termos certeza do retorno.
   public async postPayment(@Body() paymentDto: PaymentDto) {
-    return await this.paymentsService.savePayment(paymentDto);
+    await this.paymentsQueue.add('payment-job', paymentDto);
+    return { status: 'queued', message: 'Payment enqueued' };
   }
 
   // Retorna 200 por padrão no NestJS
